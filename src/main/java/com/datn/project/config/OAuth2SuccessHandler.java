@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -22,30 +23,32 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    @Autowired
-    private JwtService jwtService;
+        @Value("${frontend.url}")
+        private String frontendUrl;
 
-    @Autowired
-    private IUserRepository userRepository;
+        @Autowired
+        private JwtService jwtService;
 
-    private static final String FRONTEND_URL = "http://localhost:5173/oauth2/callback";
+        @Autowired
+        private IUserRepository userRepository;
 
-    @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-            Authentication authentication) throws IOException, ServletException {
-        CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
 
-        User user = userRepository.findByEmailWithRoles(oAuth2User.getEmail())
-                .orElseThrow(() -> new RuntimeException("Email khong ton tai"));
+        @Override
+        public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+                        Authentication authentication) throws IOException, ServletException {
+                CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
 
-        List<GrantedAuthority> roles = user.getRoles().stream()
-                .map(r -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + r.getName()))
-                .toList();
+                User user = userRepository.findByEmailWithRoles(oAuth2User.getEmail())
+                                .orElseThrow(() -> new RuntimeException("Email khong ton tai"));
 
-        String token = jwtService.generateToken(user.getEmail(), roles);
+                List<GrantedAuthority> roles = user.getRoles().stream()
+                                .map(r -> (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + r.getName()))
+                                .toList();
 
-        String redirectUrl = FRONTEND_URL + "?token=" + token;
-        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
-    }
+                String token = jwtService.generateToken(user.getEmail(), roles);
+
+                String redirectUrl = frontendUrl + "/oauth2/callback?token=" + token;
+                getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+        }
 
 }
