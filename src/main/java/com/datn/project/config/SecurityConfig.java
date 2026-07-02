@@ -102,6 +102,12 @@ public class SecurityConfig {
                             // ─── Payment ─────────────────────────────────────
                             .requestMatchers("/api/v1/payment/**").permitAll()
 
+                            .requestMatchers(
+                                    "/swagger-ui/**",
+                                    "/swagger-ui.html",
+                                    "/v3/api-docs/**")
+                            .permitAll()
+
                             .anyRequest().permitAll();
                 })
                 .oauth2Login(oauth2 -> oauth2
